@@ -420,6 +420,7 @@ static void __init setup_processor(void)
 
 	cacheid_init();
 	cpu_proc_init();
+	set_my_cpu_offset(0);
 }
 
 /*
@@ -436,6 +437,14 @@ void cpu_init(void)
 		printk(KERN_CRIT "CPU%u: bad primary CPU number\n", cpu);
 		BUG();
 	}
+
+/*
+ * This only works on resume and secondary cores. For booting on the
+ * boot cpu, smp_prepare_boot_cpu is called after percpu area setup.
+ */
+ set_my_cpu_offset(per_cpu_offset(cpu));
+
+cpu_proc_init();
 
 	/*
 	 * Define the placement constraint for the inline asm directive below.
@@ -1129,7 +1138,7 @@ static int c_show(struct seq_file *m, void *v)
 		   cpu_name, read_cpuid_id() & 15, elf_platform);
 
 #if defined(CONFIG_SMP)
-	for_each_online_cpu(i) {
+	for_each_present_cpu(i) {
 		/*
 		 * glibc reads /proc/cpuinfo to determine the number of
 		 * online processors, looking for lines beginning with
